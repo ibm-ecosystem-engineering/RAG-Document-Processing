@@ -1,0 +1,10 @@
+{
+  "question": "",
+  "es_index_name": "",
+  "llm_params": {
+    "model_id": "meta-llama/llama-2-70b-chat"
+  },
+  "filters": {
+    "file_name": ""
+  }
+}
