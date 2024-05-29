@@ -2,7 +2,7 @@
   "question": "",
   "es_index_name": "",
   "llm_params": {
-    "model_id": "meta-llama/llama-2-70b-chat"
+    "model_id": "meta-llama/llama-3-70b-instruct"
   },
   "filters": {
     "file_name": ""

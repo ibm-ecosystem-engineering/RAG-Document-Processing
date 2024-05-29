@@ -4,11 +4,8 @@ from typing import (
 )
 import re
 import json
-from ibm_watson_machine_learning.foundation_models import Model
-from ibm_watson_machine_learning.metanames import GenTextParamsMetaNames as GenParams
-from ibm_watson_machine_learning.foundation_models.utils.enums import DecodingMethods
-from ibm_watson_machine_learning.foundation_models.extensions.langchain import WatsonxLLM
-from langchain.prompts import PromptTemplate
+from langchain_ibm import WatsonxLLM
+from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from dotenv import load_dotenv
 import os
@@ -121,21 +118,23 @@ wml_credentials = {
     "apikey": API_KEY
 }
 project_id = WX_PROJECT_ID
+
 generate_parameters = {
-    GenParams.DECODING_METHOD: DecodingMethods.GREEDY,
-    GenParams.MIN_NEW_TOKENS: 1,
-    GenParams.MAX_NEW_TOKENS: 100,
-    GenParams.STOP_SEQUENCES: ['}'],
-    GenParams.REPETITION_PENALTY: 1,
+    "decoding_method": "greedy",
+    "min_new_tokens": 1,
+    "max_new_tokens": 100,
+    "repetition_penalty": 1,
+    "stop_sequences": ['}']
 }
+
 llm_model_id = ANSWER_PROCESSING_MODEL_ID
-model = Model(
-model_id=llm_model_id,
-params=generate_parameters,
-credentials=wml_credentials,
-project_id=project_id
-)
-llm_model = WatsonxLLM(model=model)
+
+llm_model = WatsonxLLM(apikey=wml_credentials['apikey'],
+                         url=wml_credentials['url'],
+                         project_id=project_id,
+                         model_id=llm_model_id,
+                         params=generate_parameters)
+
 
 # query llm on a response object
 def llm_entity_extraction(response_object):
@@ -147,8 +146,8 @@ def llm_entity_extraction(response_object):
     template_file.close()
 
     prompt = PromptTemplate(input_variables=["query"],template=template)
-    llm_chain = LLMChain(prompt=prompt, llm=llm_model)
-    prompt_results = llm_chain.run(query)
+    llm_chain = prompt | llm_model
+    prompt_results = llm_chain.invoke(query)
     return prompt_results
 
 
