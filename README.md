@@ -35,6 +35,8 @@ The following prerequisites are required to interface with watsonx Discovery and
 
 ### Installation
 
+#### Start the RAG-LLM-Service
+
 1. Clone the repo
 
    ```bash
@@ -72,21 +74,29 @@ The following prerequisites are required to interface with watsonx Discovery and
 
    1. To access Swagger: <http://0.0.0.0:4050/docs>
 
-7. Open a new terminal, change directory into the cloned repo, and start the virtual environment
+#### Run batch Document-Processing
+
+1. Open a new terminal, change directory into the cloned repo, start the virtual environment, and change directories into Dcoument-Processing
 
    ```bash
-   cd RAG-Document-Processing
-   source virtual-env/bin/activate
+    cd RAG-Document-Processing
+    source virtual-env/bin/activate
+    cd Document-Processing
    ```
 
-8. Change directory into Document-Processing and run document_processing_script.py to run questions across watsonx Discovery and process the answers
+2. Configure config files within the config directory
+   1. You can modify doc_processing_config.json to
+      1. Choose what questions to process across documents
+      2. Only process specific documents
+      3. Only process newly added (unprocessed) documents
+   2. You can modify answer_processing_instructions.txt to specify what you want to extract from the watsonx Discovery answer chunks
+3. Run batch Document-Processing
 
    ```bash
-   cd Document-Processing
    python3 document_processing_script.py
    ```
 
-9. When you are done with the tools, run the following command to exit the python virtual environment:
+4. When you are done with the tools, run the following command to exit the python virtual environment:
 
    ```bash
    deactivate

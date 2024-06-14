@@ -25,9 +25,13 @@ INDEX_NAME=os.getenv("INDEX_NAME")
 WXD_REQUEST_BODY_FILE = open('config/wxd_request_body.json')
 WXD_REQUEST_BODY = json.load(WXD_REQUEST_BODY_FILE)
 WXD_REQUEST_BODY_FILE.close()
-QUESTIONS_LIST_FILE = open('config/questions_list.json')
-QUESTIONS_LIST = json.load(QUESTIONS_LIST_FILE)['questions']
-QUESTIONS_LIST_FILE.close()
+DOCUMENT_PROCESSING_CONFIG_FILE = open('config/document_processing_config.json')
+DOCUMENT_PROCESSING_CONFIG_FILE_JSON = json.load(DOCUMENT_PROCESSING_CONFIG_FILE)
+QUESTIONS_LIST = DOCUMENT_PROCESSING_CONFIG_FILE_JSON['questions']
+FILE_NAMES = DOCUMENT_PROCESSING_CONFIG_FILE_JSON['file_names']
+MARKER_FILE = DOCUMENT_PROCESSING_CONFIG_FILE_JSON['marker_file']
+NEW_FILES_ONLY = DOCUMENT_PROCESSING_CONFIG_FILE_JSON['new_files_only']
+DOCUMENT_PROCESSING_CONFIG_FILE.close()
 
 API_KEY = os.getenv("IBM_CLOUD_API_KEY")
 WX_URL=os.getenv("WX_URL")
@@ -79,11 +83,55 @@ def list_files() -> List[str]:
 
     return file_names
 
-file_names = list_files()
+# lists all new files in your cloud object storage instance
+def list_new_files() -> List[str]:
+    headers = {
+            "ibm-service-instance-id": COS_INSTANCE_ID,
+            "Authorization": get_bearer_token(API_KEY),
+        }
+    params = {
+        "list-type" : 2,
+        "start-after": MARKER_FILE
+    }
+    response = requests.request("GET", COS_ENDPOINT_URL + COS_BUCKET_NAME, params=params, headers=headers)
+    data = response.text
+    file_names = re.findall(r"<Key>(.*?)</Key>", data)
+
+    isTruncated = re.findall(r"<IsTruncated>(.*?)</IsTruncated>", data)[0]
+
+    while isTruncated == 'true':
+        continuation_token = re.findall(r"<NextContinuationToken>(.*?)</NextContinuationToken>", data)
+        params = {
+            "list-type": 2,
+            "continuation-token": continuation_token[0],
+        }
+        response = requests.request("GET", COS_ENDPOINT_URL + COS_BUCKET_NAME, params=params, headers=headers)
+        data = response.text
+        file_names += re.findall(r"<Key>(.*?)</Key>", data)
+        isTruncated = re.findall(r"<IsTruncated>(.*?)</IsTruncated>", data)[0]
+
+    return file_names
+
+# check if we specified file names we want to test first
+if not FILE_NAMES:
+    if NEW_FILES_ONLY:
+        FILE_NAMES = list_new_files()
+    else:
+        FILE_NAMES = list_files()
+    if FILE_NAMES:
+        MARKER_FILE = FILE_NAMES[-1]
+
+with open('config/document_processing_config.json', 'r') as file:
+    data = json.load(file)
+
+data['marker_file'] = MARKER_FILE
+
+with open('config/document_processing_config.json', 'w') as file:
+    json.dump(data, file)
 
 # print all your filenames
 print("\n\nFile names:\n")
-print(file_names)
+print(FILE_NAMES)
 print("\n\n")
 
 answers_list = []
@@ -99,7 +147,7 @@ def wx_discovery_call(file_name, query):
 
 # makes a watsonx Discovery query for all files
 print("watsonx Discovery answers:\n")
-for file_name in file_names:
+for file_name in FILE_NAMES:
     response_object = {}
     response_object['fileName'] = file_name
     response_object['answers'] = ""
