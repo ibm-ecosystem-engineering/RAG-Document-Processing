@@ -2,5 +2,5 @@
   "questions": ["question 1", "question 2"],
   "file_names": [],
   "marker_file": "",
-  "new_files_only": true
+  "new_files_only": false
 }
